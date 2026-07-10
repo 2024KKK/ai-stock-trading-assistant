@@ -1,8 +1,8 @@
 ---
 name: ai-stock-trading-assistant
-description: 完整A股AI炒股助手系统 — 告别选股哲学 + 看A做B策略 + 固定龙头库 + 多Agent技术分析。每日5-6次自动推送，覆盖盘前/早盘/午盘/尾盘/收盘/晚间。
+description: 完整A股AI炒股助手系统 — 告别选股哲学 + 看A做B策略 + 固定龙头库 + 多Agent技术分析 + Agent-Reach网页读取。每日自动推送，覆盖盘前/早盘/午盘/尾盘/收盘/晚间。
 author: k@11h5.com
-tags: [a-share, trading, stock, cron, push, mainboard, ai-assistant]
+tags: [a-share, trading, stock, cron, push, mainboard, ai-assistant, agent-reach]
 ---
 
 # AI 炒股助手 — 完整交易员系统
@@ -28,37 +28,58 @@ tags: [a-share, trading, stock, cron, push, mainboard, ai-assistant]
 
 ---
 
+## 技术栈
+
+| 组件 | 用途 |
+|------|------|
+| [Hermes Agent](https://hermes-agent.nousresearch.com) | AI Agent框架，运行cron定时推送 |
+| [Agent-Reach](https://github.com/Panniantong/Agent-Reach) | 互联网能力层：Jina Reader读取财经新闻 |
+| [cn-stock-analysis](https://github.com/shaohk/TradingAgents-CN-SKILL) | 15Agent多维度深度分析（可选） |
+| free_data_layer.py | 新浪/腾讯实时行情 |
+| mainboard_leaders.py | 固定龙头库（18板块31只） |
+| tushare_sync.py | 历史日线数据同步（可选） |
+
+---
+
 ## 每日推送时间表
 
 | 时间 | 名称 | 内容 | 数据源 |
 |------|------|------|--------|
-| 08:50 | 盘前提醒 | 简短提醒今日策略 + 昨晚外盘概要 | 无（纯文本） |
-| 09:00 | 晨间简报 | 新闻扫读 → 情绪罗盘 → 具体荐股代码 | web搜索 + free_data_layer |
-| 10:05 | 技术面验证 | 09:00荐股复盘 + 技术指标评分表 | free_data_layer + delegate_task |
-| 12:00 | 午间暴击 | 半日盘面 + 新催化 → 荐股更新 | web搜索 |
-| 14:30 | 尾盘突袭 | 全天盘面 + 最终入场计划 | web搜索 + free_data_layer |
-| 15:30 | 收盘复盘 | 今日荐股涨跌回顾 + 逻辑验证 | 读取今日推送日志 |
-| 21:00 | 晚间前瞻 | 美股/A50/黄金/原油 + 次日盯盘清单 | web搜索 |
-| 18:30 | 数据同步 | Tushare 日线数据自动同步 | tushare_sync.py |
+| 08:50 | 盘前提醒 | 简短策略提醒 | 纯文本 |
+| 09:00 | 晨间简报 | 新闻→情绪罗盘→荐股 | Jina Reader + free_data_layer |
+| 10:05 | 技术面验证 | 打分表+技术指标 | free_data_layer + delegate_task |
+| 12:00 | 午间暴击 | 半日盘面+新催化 | Jina Reader |
+| 14:30 | 尾盘突袭 | 最终入场计划 | free_data_layer |
+| 15:30 | 收盘复盘 | 荐股涨跌回顾 | free_data_layer |
+| 21:00 | 晚间前瞻 | 外盘+明日盯盘 | Jina Reader + free_data_layer |
 
 ---
-
-## 固定龙头库（18板块 31只）
-
-完整列表在 `references/mainboard-leaders.md`。核心板块：半导体/芯片、光模块/光通信、AI服务器/液冷、光伏、锂电池/储能、新能源汽车、黄金/贵金属、铜/有色、化工、银行/高股息、军工/航空、创新药、白酒/消费、券商、船舶、地产、钢铁。
-
----
-
-## 核心流程
-
-```
-08:50 → 09:00(新闻+荐股) → 10:05(技术验证) → 12:00(午间) → 14:30(尾盘) → 15:30(复盘) → 21:00(晚间)
-```
 
 ## 数据流
 
-free_data_layer.py (新浪) → 实时行情
-delegate_task (cn-stock-analysis) → 技术分析子代理
+```
+Jina Reader (r.jina.ai) ──── 读财经新闻 → 匹配龙头库 → 荐股
+free_data_layer.py (新浪) ── 实时行情: 价/量/涨跌幅/换手率
+delegate_task (cn-stock-analysis) ─ 技术分析子代理 → 评分/MA/MACD/RSI
+```
+
+---
+
+## 安装
+
+```bash
+# 1. 安装技能
+hermes skill install https://github.com/2024KKK/ai-stock-trading-assistant
+
+# 2. 安装 Agent-Reach
+pip install https://github.com/Panniantong/agent-reach/archive/main.zip
+
+# 3. 克隆脚本
+git clone https://github.com/2024KKK/trading-bot.git ~/trading-bot
+pip install requests pandas akshare
+
+# 4. 配置 cron（见 references/setup-guide.md）
+```
 
 ---
 
